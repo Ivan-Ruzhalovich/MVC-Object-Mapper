@@ -4,6 +4,7 @@ import com.ivan.mvcobjectmapper.entity.Order;
 import com.ivan.mvcobjectmapper.entity.Product;
 import com.ivan.mvcobjectmapper.repository.OrdersRepository;
 import com.ivan.mvcobjectmapper.repository.ProductsRepository;
+import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,8 @@ import java.util.Optional;
 
 @Service
 public class ObjectMapperServiceImpl implements ObjectMapperService{
+
+    private Logger logger = Logger.getLogger(this.getClass());
 
     private final ProductsRepository productsRepository;
     private final OrdersRepository ordersRepository;
@@ -63,11 +66,10 @@ public class ObjectMapperServiceImpl implements ObjectMapperService{
 
     @Override
     public void registerNewOrder(Order order) {
-        BigDecimal totalPrice = BigDecimal.ZERO;
+        order.setTotalPrice(BigDecimal.ZERO);
         for(Product product:order.getProducts()){
-            totalPrice.add(product.getPrice());
+            order.setTotalPrice(order.getTotalPrice().add(product.getPrice()));
         }
-        order.setTotalPrice(totalPrice);
         if(order.getOrderId()==null)
             ordersRepository.save(order);
         else if(order.getOrderId()!=null && !ordersRepository.existsById(order.getOrderId()))
@@ -80,12 +82,10 @@ public class ObjectMapperServiceImpl implements ObjectMapperService{
         Order order =  ordersRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Заказ не найден!"));
-        BigDecimal totalPrice = BigDecimal.ZERO;
+        order.setTotalPrice(BigDecimal.ZERO);
         for(Product product:order.getProducts()){
-
-            totalPrice.add(productsRepository.findById(product.getProductId()).get().getPrice());
+            order.setTotalPrice(order.getTotalPrice().add(product.getPrice()));
         }
-        order.setTotalPrice(totalPrice);
         return order;
     }
 }
